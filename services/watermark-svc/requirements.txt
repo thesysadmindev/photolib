@@ -1,0 +1,21 @@
+# Watermarking backend: TrustMark (Adobe/Truepic) - https://github.com/adobe/trustmark
+#
+# We evaluated the ShieldMnt/invisible-watermark library (DWT-DCT-SVD method) first,
+# since that was the originally planned approach. Direct round-trip testing showed it
+# does not meet the "survive typical re-compression" requirement: even with ZERO
+# external transformation it only recovered the correct payload 50-90% of the time
+# depending on payload size, and failed completely (0%) at JPEG quality 70. Its
+# RivaGAN method failed outright (0% even at quality 100) in this library version.
+#
+# TrustMark, in the same testing, recovered an 8-character token correctly in 100% of
+# trials (48/48) across JPEG quality 60-100 and combined with resizing down to 25% of
+# original dimensions - matching the actual "downloaded, re-saved for social media"
+# threat model. It pulls in a real ML stack (torch/torchvision/lightning) for its
+# learned encoder/decoder, which is a meaningfully heavier install than the original
+# plan (a few GB, several minutes on first `pip install`) - budget for that during VPS
+# provisioning (see infra/setup.md).
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+trustmark==0.9.1
+Pillow>=10.0.0

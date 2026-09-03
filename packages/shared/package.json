@@ -1,0 +1,29 @@
+{
+  "name": "@photolib/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.658.1",
+    "@aws-sdk/s3-request-presigner": "^3.658.1",
+    "bullmq": "^5.12.12",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.33.0",
+    "ioredis": "^5.4.1",
+    "postgres": "^3.4.4"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.24.2",
+    "tsx": "^4.19.1",
+    "typescript": "^5.5.4",
+    "@types/node": "^22.5.5"
+  }
+}
