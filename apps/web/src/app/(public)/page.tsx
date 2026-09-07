@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { GalleryGrid } from "@/components/GalleryGrid";
 
 export default function GalleryPage({ searchParams }: { searchParams: { tag?: string } }) {
@@ -18,10 +19,12 @@ export default function GalleryPage({ searchParams }: { searchParams: { tag?: st
           )}
         </div>
       </div>
-      <GalleryGrid
-        baseUrl={tag ? `/api/photos?tag=${encodeURIComponent(tag)}` : "/api/photos"}
-        emptyMessage={tag ? "No photos with this tag." : "No photos have been published yet."}
-      />
+      <Suspense fallback={null}>
+        <GalleryGrid
+          baseUrl={tag ? `/api/photos?tag=${encodeURIComponent(tag)}` : "/api/photos"}
+          emptyMessage={tag ? "No photos with this tag." : "No photos have been published yet."}
+        />
+      </Suspense>
     </div>
   );
 }

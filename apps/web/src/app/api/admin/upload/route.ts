@@ -10,6 +10,7 @@ import { db, schema, rawKey, putObjectFromPath, enqueueConvertPhoto } from "@pho
 import { eq } from "drizzle-orm";
 import { authOptions } from "@/lib/auth";
 import { isRawExtension, extensionOf } from "@/lib/rawFormats";
+import { setPhotoAlbums } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file");
   const title = formData.get("title");
   const description = formData.get("description");
+  const albumIds = formData.getAll("albumIds").filter((v): v is string => typeof v === "string");
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Missing file" }, { status: 400 });
@@ -77,7 +79,9 @@ export async function POST(req: NextRequest) {
 
     await db.insert(schema.photos).values({
       id: photoId,
-      title: typeof title === "string" && title.length > 0 ? title : null,
+      // Falls back to the original filename (matches how the admin photos table already
+      // displays untitled photos) rather than leaving title null.
+      title: typeof title === "string" && title.length > 0 ? title : file.name,
       description: typeof description === "string" && description.length > 0 ? description : null,
       originalFilename: file.name,
       rawFormat: extensionOf(file.name).slice(1).toUpperCase(),
@@ -86,6 +90,10 @@ export async function POST(req: NextRequest) {
       status: "pending",
       uploadedBy: session.user.id as string,
     });
+
+    if (albumIds.length > 0) {
+      await setPhotoAlbums(photoId, albumIds);
+    }
 
     await enqueueConvertPhoto(photoId);
 

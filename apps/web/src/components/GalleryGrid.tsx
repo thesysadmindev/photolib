@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Pagination } from "@/components/Pagination";
 
 interface PhotoListItem {
   id: string;
@@ -14,7 +16,8 @@ interface PhotoListItem {
 
 interface PhotosResponse {
   photos: PhotoListItem[];
-  nextCursor: string | null;
+  page: number;
+  totalPages: number;
 }
 
 function formatMeta(photo: PhotoListItem): string | null {
@@ -25,50 +28,62 @@ function formatMeta(photo: PhotoListItem): string | null {
 }
 
 interface GalleryGridProps {
-  /** Endpoint to page through; must return { photos, nextCursor } like /api/photos does. */
+  /** Endpoint to page through; must return { photos, page, totalPages } like /api/photos does. */
   baseUrl?: string;
   emptyMessage?: string;
 }
 
 export function GalleryGrid({ baseUrl = "/api/photos", emptyMessage = "No photos have been published yet." }: GalleryGridProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const pageParam = Number(searchParams.get("page"));
+  const page = Number.isFinite(pageParam) && pageParam >= 1 ? Math.floor(pageParam) : 1;
+
   const [photos, setPhotos] = useState<PhotoListItem[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-  const loadMore = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
     setLoading(true);
+
     const separator = baseUrl.includes("?") ? "&" : "?";
-    const url = cursor ? `${baseUrl}${separator}cursor=${encodeURIComponent(cursor)}` : baseUrl;
-    const res = await fetch(url);
-    const data: PhotosResponse = await res.json();
-    setPhotos((prev) => [...prev, ...data.photos]);
-    setCursor(data.nextCursor);
-    setHasMore(Boolean(data.nextCursor));
-    setLoading(false);
-    setInitialLoad(false);
-  }, [cursor, baseUrl]);
+    fetch(`${baseUrl}${separator}page=${page}`)
+      .then((res) => res.json())
+      .then((data: PhotosResponse) => {
+        if (cancelled) return;
+        setPhotos(data.photos);
+        setTotalPages(data.totalPages);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-  useEffect(() => {
-    setPhotos([]);
-    setCursor(null);
-    setInitialLoad(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseUrl]);
+    return () => {
+      cancelled = true;
+    };
+  }, [baseUrl, page]);
 
-  useEffect(() => {
-    if (initialLoad) loadMore();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialLoad]);
+  function goToPage(target: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (target <= 1) {
+      params.delete("page");
+    } else {
+      params.set("page", String(target));
+    }
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  }
 
-  if (!initialLoad && photos.length === 0) {
+  if (!loading && photos.length === 0) {
     return <div className="empty-state">{emptyMessage}</div>;
   }
 
   return (
     <div>
-      <div className="gallery-grid">
+      <div className={`gallery-grid ${loading ? "gallery-grid-loading" : ""}`}>
         {photos.map((photo) => {
           const meta = formatMeta(photo);
           return (
@@ -84,13 +99,8 @@ export function GalleryGrid({ baseUrl = "/api/photos", emptyMessage = "No photos
           );
         })}
       </div>
-      {hasMore && (
-        <div style={{ textAlign: "center", marginTop: 32 }}>
-          <button className="btn btn-secondary" onClick={loadMore} disabled={loading}>
-            {loading ? "Loading…" : "Load more"}
-          </button>
-        </div>
-      )}
+
+      <Pagination page={page} totalPages={totalPages} onNavigate={goToPage} disabled={loading} />
     </div>
   );
 }

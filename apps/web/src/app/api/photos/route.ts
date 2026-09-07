@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@photolib/shared";
-import { and, desc, eq, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 30;
 
 export async function GET(req: NextRequest) {
-  const cursorParam = req.nextUrl.searchParams.get("cursor");
-  const cursor = cursorParam ? new Date(cursorParam) : null;
+  const pageParam = Number(req.nextUrl.searchParams.get("page"));
+  const page = Number.isFinite(pageParam) && pageParam >= 1 ? Math.floor(pageParam) : 1;
   const tagSlug = req.nextUrl.searchParams.get("tag");
 
   const tagFilter = tagSlug
@@ -22,6 +22,16 @@ export async function GET(req: NextRequest) {
       )
     : undefined;
 
+  const where = and(eq(schema.photos.isPublic, true), eq(schema.photos.status, "ready"), tagFilter);
+
+  const [{ count: totalCount }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(schema.photos)
+    .where(where);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+
   const rows = await db
     .select({
       id: schema.photos.id,
@@ -34,25 +44,19 @@ export async function GET(req: NextRequest) {
       height: schema.photos.height,
     })
     .from(schema.photos)
-    .where(
-      and(
-        eq(schema.photos.isPublic, true),
-        eq(schema.photos.status, "ready"),
-        cursor ? lt(schema.photos.uploadedAt, cursor) : undefined,
-        tagFilter,
-      ),
-    )
+    .where(where)
     .orderBy(desc(schema.photos.uploadedAt))
-    .limit(PAGE_SIZE);
-
-  const nextCursor =
-    rows.length === PAGE_SIZE ? rows[rows.length - 1]!.uploadedAt.toISOString() : null;
+    .limit(PAGE_SIZE)
+    .offset((safePage - 1) * PAGE_SIZE);
 
   return NextResponse.json({
     photos: rows.map((p) => ({
       ...p,
       thumbUrl: `/api/photos/${p.id}/thumb`,
     })),
-    nextCursor,
+    page: safePage,
+    pageSize: PAGE_SIZE,
+    totalCount,
+    totalPages,
   });
 }

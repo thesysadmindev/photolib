@@ -271,6 +271,34 @@ a:hover {
   margin-top: 2px;
 }
 
+.gallery-grid-loading {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 32px;
+}
+
+.pagination-page[aria-current="page"] {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.pagination-ellipsis {
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .empty-state {
   text-align: center;
   padding: 64px 20px;
@@ -537,6 +565,36 @@ input[type="file"] {
 .form-message.success {
   background: var(--success-bg);
   color: var(--success-fg);
+}
+
+.upload-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+
+.upload-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-hover);
+}
+
+.upload-list-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upload-list-status {
+  flex-shrink: 0;
 }
 
 /* ---------- Auth page ---------- */
