@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    env:
+      # next build imports every apps/web/src/app/**/route.ts to collect route
+      # metadata, which pulls in @photolib/shared's db client and R2 client -
+      # both throw at import time if these are unset, even though nothing is
+      # actually queried/uploaded during a build. Placeholders only, never real
+      # credentials - do not add secrets here.
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+      R2_ACCOUNT_ID: ci
+      R2_ACCESS_KEY_ID: ci
+      R2_SECRET_ACCESS_KEY: ci
+      R2_BUCKET: ci
+      R2_ENDPOINT: https://ci.example.invalid
+      NEXTAUTH_SECRET: ci-build-only-placeholder
+      NEXTAUTH_URL: http://localhost:3000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      # Also type-checks: `next build` type-checks apps/web, and `tsc -p` builds
+      # (and therefore type-checks) apps/worker and packages/shared.
+      - name: Build
+        run: pnpm run build

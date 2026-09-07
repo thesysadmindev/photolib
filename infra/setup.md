@@ -67,6 +67,23 @@ pnpm build   # builds packages/shared then apps/web and apps/worker, in dependen
 
 `NEXTAUTH_SECRET` should be a long random value, e.g. `openssl rand -base64 32`.
 
+**Alternative:** instead of building on the VPS, download a pre-built release tarball
+from the repo's GitHub Releases (produced by `.github/workflows/release.yml` on every
+`vX.Y.Z` tag - lint + build already passed in CI) and skip straight to `pnpm install`/
+`pnpm build` below:
+
+```bash
+mkdir -p /opt/photolib && cd /opt/photolib
+curl -fsSL -o photolib.tar.gz https://github.com/<org>/<repo>/releases/download/vX.Y.Z/photolib-vX.Y.Z.tar.gz
+tar -xzf photolib.tar.gz
+cp .env.example .env   # edit as below - the tarball never contains .env
+```
+
+This only covers `apps/web`, `apps/worker`, and `packages/shared` (already built, with
+`node_modules` pruned to production dependencies) - still do steps 6-9 as normal, and
+still build the Python watermark sidecar (step 7) directly on the VPS, since its
+torch/torchvision wheels are platform-specific and aren't part of the tarball.
+
 ## 6. Database migrations + admin user
 
 ```bash
@@ -191,5 +208,15 @@ git pull
 pnpm install
 pnpm build
 pnpm db:migrate   # if schema.ts changed
+pm2 restart ecosystem.config.js
+```
+
+Or, using a CI-built release tarball instead of building on the VPS:
+
+```bash
+cd /opt/photolib
+curl -fsSL -o photolib.tar.gz https://github.com/<org>/<repo>/releases/download/vX.Y.Z/photolib-vX.Y.Z.tar.gz
+tar -xzf photolib.tar.gz   # overwrites apps/, packages/, node_modules/ - leaves .env alone
+pnpm db:migrate            # if schema.ts changed
 pm2 restart ecosystem.config.js
 ```

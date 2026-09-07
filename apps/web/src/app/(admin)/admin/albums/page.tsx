@@ -152,7 +152,7 @@ export default function AdminAlbumsPage() {
       )}
 
       <p style={{ marginTop: 20, fontSize: 13 }}>
-        Add photos to an album from each photo's <Link href="/admin/photos">edit page</Link>.
+        Add photos to an album from each photo&apos;s <Link href="/admin/photos">edit page</Link>.
       </p>
     </div>
   );

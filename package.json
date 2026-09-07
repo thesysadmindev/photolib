@@ -6,6 +6,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @photolib/shared run build && pnpm -r --parallel run dev",
+    "lint": "pnpm -r --if-present run lint",
     "build": "pnpm -r run build",
     "db:generate": "pnpm --filter @photolib/shared run db:generate",
     "db:migrate": "pnpm --filter @photolib/shared run db:migrate"

@@ -19,3 +19,4 @@ venv/
 .pm2/
 logs/
 .claude/
+photolib-*.tar.gz

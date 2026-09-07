@@ -42,6 +42,20 @@ pnpm dev
 
 Site: http://localhost:3000, admin login: http://localhost:3000/admin/login
 
+## CI / releases
+
+`.github/workflows/ci.yml` lints (`pnpm lint`) and builds (`pnpm build`, which also
+type-checks) on every push and PR. `.github/workflows/release.yml` runs the same
+lint+build gate on any `vX.Y.Z` tag push, then packages `apps/web`, `apps/worker`, and
+`packages/shared` (built, with `node_modules` pruned to production dependencies) into a
+`photolib-vX.Y.Z.tar.gz` GitHub Release asset - see
+[`scripts/package-release.sh`](./scripts/package-release.sh) and
+["Alternative" in infra/setup.md](./infra/setup.md#5-clone-and-build-the-app) for how to
+deploy from it instead of building on the VPS. The Python watermark sidecar isn't part
+of this pipeline - its torch/torchvision venv stays platform-built, directly on the VPS.
+
+To cut a release: `git tag v1.2.0 && git push origin v1.2.0`.
+
 ## Notes
 
 - RAW files are never exposed publicly - only the admin can download originals

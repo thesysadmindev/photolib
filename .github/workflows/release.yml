@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    env:
+      # See ci.yml for why these are needed at build time - placeholders only,
+      # never real credentials.
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+      R2_ACCOUNT_ID: ci
+      R2_ACCESS_KEY_ID: ci
+      R2_SECRET_ACCESS_KEY: ci
+      R2_BUCKET: ci
+      R2_ENDPOINT: https://ci.example.invalid
+      NEXTAUTH_SECRET: ci-build-only-placeholder
+      NEXTAUTH_URL: http://localhost:3000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Package release tarball
+        run: bash scripts/package-release.sh "photolib-${{ github.ref_name }}.tar.gz"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            "photolib-${{ github.ref_name }}.tar.gz" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes

@@ -7,7 +7,10 @@ require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
+  // Deployment runs `next start` (see ecosystem.config.js), not the standalone
+  // server output, so `output: "standalone"` isn't used here - and enabling it
+  // requires symlink creation, which fails outright on Windows without Developer
+  // Mode enabled.
   transpilePackages: ["@photolib/shared"],
   experimental: {
     serverComponentsExternalPackages: ["sharp"],
