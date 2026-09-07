@@ -10,8 +10,11 @@ set -euo pipefail
 # production-only node_modules tree (pnpm's symlinked layout, pruned via
 # `pnpm prune --prod`) - extract the WHOLE archive as one unit on the target
 # machine (its node_modules symlinks are relative to the layout inside the
-# archive) and no `pnpm install`/`pnpm build` is needed there. `.env` is
-# never included; keep managing that directly on the target VPS.
+# archive) and no `pnpm install`/`pnpm build` is needed there. `.env.example`
+# is included (it's a template, no secrets - infra/setup.md's tarball deploy
+# steps assume it's there to `cp .env.example .env`); actual `.env`/
+# `.env.local`/`.env.*.local` files are never included, matching .gitignore -
+# keep managing those directly on the target VPS.
 #
 # Deliberately does not touch services/watermark-svc: its Python/torch venv
 # is platform-specific and is still built directly on the VPS per
@@ -41,7 +44,8 @@ tar \
   --exclude="logs" \
   --exclude="*.log" \
   --exclude=".env" \
-  --exclude=".env.*" \
+  --exclude=".env.local" \
+  --exclude=".env.*.local" \
   -czf "$OUT" \
   node_modules \
   apps \
@@ -51,6 +55,7 @@ tar \
   pnpm-workspace.yaml \
   pnpm-lock.yaml \
   README.md \
-  infra
+  infra \
+  .env.example
 
 echo "Wrote $OUT"
