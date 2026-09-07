@@ -29,7 +29,7 @@ redis-cli --version
 ## 2. Node.js + pnpm + PM2
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt install -y nodejs
 sudo npm install -g pnpm pm2
 ```
