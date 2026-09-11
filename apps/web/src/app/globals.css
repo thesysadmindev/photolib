@@ -222,6 +222,37 @@ a:hover {
   gap: 20px;
 }
 
+/* The photo library grid specifically: fixed 5 across (paired with a page
+   size of 50 = 10 rows) rather than the auto-fill layout other grids (like
+   the albums index) use. */
+.gallery-grid-photos {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+@media (max-width: 1100px) {
+  .gallery-grid-photos {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .gallery-grid-photos {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .gallery-grid-photos {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .gallery-grid-photos {
+    grid-template-columns: 1fr;
+  }
+}
+
 .gallery-card {
   display: block;
   border-radius: var(--radius-md);
@@ -239,10 +270,37 @@ a:hover {
   text-decoration: none;
 }
 
+.gallery-card-wrapper {
+  position: relative;
+}
+
 .gallery-card-image {
   aspect-ratio: 4 / 3;
   background: var(--surface-hover);
   overflow: hidden;
+}
+
+.gallery-card-select {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.gallery-card-select input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
 }
 
 .gallery-card-image img {
@@ -297,6 +355,19 @@ a:hover {
   padding: 0 4px;
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.selection-count {
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .empty-state {
@@ -518,7 +589,8 @@ a:hover {
 }
 
 input,
-textarea {
+textarea,
+select {
   background: var(--surface);
   border: 1px solid var(--border-strong);
   color: var(--fg);
@@ -530,7 +602,8 @@ textarea {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);

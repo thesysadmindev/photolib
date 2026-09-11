@@ -4,7 +4,8 @@ import { and, desc, eq, sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 30;
+// 5 columns x 10 rows in the gallery grid.
+const PAGE_SIZE = 50;
 
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   // Unpublished albums are unlisted (excluded from /api/albums) but still reachable by
