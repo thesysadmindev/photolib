@@ -92,7 +92,13 @@ export async function DELETE(
   }
 
   await Promise.all(
-    [photo.rawStorageKey, photo.jpgStorageKey, photo.thumbStorageKey]
+    [
+      photo.rawStorageKey,
+      photo.jpgStorageKey,
+      photo.thumbStorageKey,
+      photo.avifStorageKey,
+      photo.avifThumbStorageKey,
+    ]
       .filter((key): key is string => Boolean(key))
       .map((key) => deleteObject(key).catch(() => undefined)),
   );

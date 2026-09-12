@@ -7,12 +7,14 @@ import {
   schema,
   jpgKey,
   thumbKey,
+  avifKey,
+  avifThumbKey,
   getObjectToFile,
   putObjectFromPath,
 } from "@photolib/shared";
 import type { ConvertPhotoJobData } from "@photolib/shared";
 import { config } from "../config.js";
-import { convertRawToJpeg, DarktableError } from "../lib/darktable.js";
+import { convertRawToJpeg, convertRawToAvif, DarktableError } from "../lib/darktable.js";
 import { extractExif, ExiftoolError } from "../lib/exiftool.js";
 
 async function markFailed(photoId: string, message: string) {
@@ -48,11 +50,16 @@ export async function processConvertPhoto(data: ConvertPhotoJobData): Promise<vo
   const rawPath = path.join(jobScratchDir, `input${rawExt}`);
   const jpgPath = path.join(jobScratchDir, "output.jpg");
   const thumbPath = path.join(jobScratchDir, "thumb.jpg");
+  const avifPath = path.join(jobScratchDir, "output.avif");
+  const avifThumbPath = path.join(jobScratchDir, "thumb.avif");
 
   try {
     await getObjectToFile(photo.rawStorageKey, rawPath);
 
+    // Both masters are converted straight from the RAW (not from each other) to avoid
+    // stacking a second lossy generation on top of the JPEG.
     await convertRawToJpeg(rawPath, jpgPath);
+    await convertRawToAvif(rawPath, avifPath);
 
     const exif = await extractExif(rawPath);
 
@@ -62,18 +69,28 @@ export async function processConvertPhoto(data: ConvertPhotoJobData): Promise<vo
       .resize({ width: config.thumbWidth, withoutEnlargement: true })
       .jpeg({ quality: 85 })
       .toFile(thumbPath);
+    await sharp(avifPath)
+      .resize({ width: config.thumbWidth, withoutEnlargement: true })
+      .avif({ quality: config.avifThumbQuality })
+      .toFile(avifThumbPath);
 
     const jpgStorageKey = jpgKey(photoId);
     const thumbStorageKey = thumbKey(photoId);
+    const avifStorageKey = avifKey(photoId);
+    const avifThumbStorageKey = avifThumbKey(photoId);
 
     await putObjectFromPath(jpgStorageKey, jpgPath, "image/jpeg");
     await putObjectFromPath(thumbStorageKey, thumbPath, "image/jpeg");
+    await putObjectFromPath(avifStorageKey, avifPath, "image/avif");
+    await putObjectFromPath(avifThumbStorageKey, avifThumbPath, "image/avif");
 
     await db
       .update(schema.photos)
       .set({
         jpgStorageKey,
         thumbStorageKey,
+        avifStorageKey,
+        avifThumbStorageKey,
         exif: exif.raw,
         takenAt: exif.takenAt,
         cameraMake: exif.cameraMake,

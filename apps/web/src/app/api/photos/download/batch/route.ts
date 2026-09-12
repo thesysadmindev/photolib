@@ -3,7 +3,8 @@ import { db, schema } from "@photolib/shared";
 import { and, eq, inArray } from "drizzle-orm";
 import { getClientIp } from "@/lib/ip";
 import { checkRateLimit } from "@/lib/rateLimit";
-import { appendWatermarkedJpgs, manifestEntry } from "@/lib/batchDownload";
+import { appendWatermarkedImages, manifestEntry } from "@/lib/batchDownload";
+import type { DownloadFormat } from "@/lib/watermarkDownload";
 import { createZipResponse } from "@/lib/zipStream";
 
 export const dynamic = "force-dynamic";
@@ -13,12 +14,14 @@ const MAX_BATCH_SIZE = 50;
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
 
-  const { allowed } = await checkRateLimit("download-jpg-batch", ip);
+  const body = await req.json().catch(() => null);
+  const format: DownloadFormat = body?.format === "avif" ? "avif" : "jpg";
+
+  const { allowed } = await checkRateLimit(`download-${format}-batch`, ip);
   if (!allowed) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const body = await req.json().catch(() => null);
   const rawIds: unknown = body?.photoIds;
   const photoIds: string[] = Array.isArray(rawIds)
     ? Array.from(new Set(rawIds.filter((id): id is string => typeof id === "string")))
@@ -49,7 +52,7 @@ export async function POST(req: NextRequest) {
   const userAgent = req.headers.get("user-agent") ?? undefined;
 
   return createZipResponse(async (archive) => {
-    const result = await appendWatermarkedJpgs(archive, photos, { ip, userAgent, downloadedByAdmin: false });
+    const result = await appendWatermarkedImages(archive, photos, format, { ip, userAgent, downloadedByAdmin: false });
     const note = manifestEntry(result);
     if (note) archive.append(note, { name: "MANIFEST.txt" });
   }, "photos.zip");

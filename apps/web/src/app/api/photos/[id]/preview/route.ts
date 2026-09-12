@@ -3,6 +3,6 @@ import { servePhotoAsset } from "@/lib/servePhotoAsset";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  return servePhotoAsset(params.id, "jpgStorageKey");
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  return servePhotoAsset(req, params.id, { jpg: "jpgStorageKey", avif: "avifStorageKey" });
 }

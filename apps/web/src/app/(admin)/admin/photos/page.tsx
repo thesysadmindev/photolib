@@ -24,7 +24,7 @@ export default function AdminPhotosPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [bulkDownloading, setBulkDownloading] = useState<"raw" | "jpg" | null>(null);
+  const [bulkDownloading, setBulkDownloading] = useState<"raw" | "jpg" | "avif" | null>(null);
   const [bulkError, setBulkError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -94,7 +94,7 @@ export default function AdminPhotosPage() {
     load();
   }
 
-  async function bulkDownload(fileType: "raw" | "jpg") {
+  async function bulkDownload(fileType: "raw" | "jpg" | "avif") {
     if (selected.size === 0 || bulkDownloading) return;
     setBulkDownloading(fileType);
     setBulkError(null);
@@ -178,6 +178,14 @@ export default function AdminPhotosPage() {
               onClick={() => bulkDownload("jpg")}
             >
               {bulkDownloading === "jpg" ? "Zipping…" : "Download JPG (zip)"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              disabled={selected.size === 0 || bulkDownloading !== null}
+              onClick={() => bulkDownload("avif")}
+            >
+              {bulkDownloading === "avif" ? "Zipping…" : "Download AVIF (zip)"}
             </button>
             {bulkError && <span className="error-note">{bulkError}</span>}
           </div>

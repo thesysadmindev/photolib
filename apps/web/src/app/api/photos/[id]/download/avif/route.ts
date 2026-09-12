@@ -9,13 +9,18 @@ import { embedWatermarkedDownload, recordDownloadWithRetry } from "@/lib/waterma
 
 export const dynamic = "force-dynamic";
 
+// Mirrors download/jpg/route.ts exactly, except the final buffer is transcoded
+// to AVIF - see embedWatermarkedDownload for why the watermark itself is still
+// embedded in the JPEG domain. Available for any ready/public photo regardless
+// of whether its stored AVIF master (avifStorageKey) exists yet, since this
+// route only ever reads the JPEG master.
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
   const ip = getClientIp(req);
 
-  const { allowed } = await checkRateLimit("download-jpg", ip);
+  const { allowed } = await checkRateLimit("download-avif", ip);
   if (!allowed) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
@@ -43,17 +48,13 @@ export async function GET(
   try {
     const baseJpg = await getObjectBuffer(photo.jpgStorageKey);
 
-    // The token space (62^8) makes a collision astronomically unlikely, but the
-    // DB's unique constraint is the actual guarantee - recordDownloadWithRetry
-    // retries with a fresh token on the rare clash rather than trusting
-    // probability alone.
     const result = await recordDownloadWithRetry({
       photoId: photo.id,
-      fileType: "jpg",
+      fileType: "avif",
       ip,
       userAgent,
       downloadedByAdmin: false,
-      produce: (token) => embedWatermarkedDownload(baseJpg, token, "jpg"),
+      produce: (token) => embedWatermarkedDownload(baseJpg, token, "avif"),
     });
     watermarked = result.buffer;
   } catch (err) {
@@ -63,7 +64,7 @@ export async function GET(
     // attempt (no token) so a dead watermark-svc is visible in the audit log.
     await db.insert(schema.downloadEvents).values({
       photoId: photo.id,
-      fileType: "jpg",
+      fileType: "avif",
       token: null,
       ipAddress: ip,
       userAgent,
@@ -79,11 +80,11 @@ export async function GET(
   }
   release();
 
-  const filename = `${photo.title ?? photo.originalFilename.replace(/\.[^.]+$/, "")}.jpg`;
+  const filename = `${photo.title ?? photo.originalFilename.replace(/\.[^.]+$/, "")}.avif`;
 
   return new NextResponse(new Uint8Array(watermarked), {
     headers: {
-      "Content-Type": "image/jpeg",
+      "Content-Type": "image/avif",
       "Content-Disposition": `attachment; filename="${filename.replace(/"/g, "")}"`,
       // Critical: this response embeds a unique per-request token, so it must
       // never be cached/reused across different downloaders.

@@ -9,3 +9,11 @@ export function jpgKey(photoId: string): string {
 export function thumbKey(photoId: string): string {
   return `jpg/${photoId}/thumb.jpg`;
 }
+
+export function avifKey(photoId: string): string {
+  return `avif/${photoId}/base.avif`;
+}
+
+export function avifThumbKey(photoId: string): string {
+  return `avif/${photoId}/thumb.avif`;
+}

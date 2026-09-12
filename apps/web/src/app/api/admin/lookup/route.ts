@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@photolib/shared";
 import { eq } from "drizzle-orm";
 import { extractWatermark, WatermarkServiceError } from "@/lib/watermarkClient";
+import { avifToJpeg } from "@/lib/imageTranscode";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing file" }, { status: 400 });
   }
 
-  const bytes = Buffer.from(await file.arrayBuffer());
+  let bytes: Buffer = Buffer.from(await file.arrayBuffer());
+
+  // The watermark service only ever operates on JPEG bytes - a leaked file
+  // could now be an AVIF download, so transcode it before extraction.
+  const isAvif = file.type === "image/avif" || file.name.toLowerCase().endsWith(".avif");
+  if (isAvif) {
+    try {
+      bytes = await avifToJpeg(bytes);
+    } catch {
+      return NextResponse.json({ error: "Could not decode AVIF file" }, { status: 400 });
+    }
+  }
 
   let result;
   try {

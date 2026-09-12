@@ -46,7 +46,7 @@ export function GalleryGrid({ baseUrl = "/api/photos", emptyMessage = "No photos
   const [loading, setLoading] = useState(true);
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [downloading, setDownloading] = useState(false);
+  const [downloading, setDownloading] = useState<"jpg" | "avif" | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -102,15 +102,15 @@ export function GalleryGrid({ baseUrl = "/api/photos", emptyMessage = "No photos
     setSelected((prev) => (prev.size === photos.length ? new Set() : new Set(photos.map((p) => p.id))));
   }
 
-  async function downloadSelected() {
+  async function downloadSelected(format: "jpg" | "avif") {
     if (selected.size === 0 || downloading) return;
-    setDownloading(true);
+    setDownloading(format);
     setDownloadError(null);
     try {
       const res = await fetch("/api/photos/download/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoIds: Array.from(selected) }),
+        body: JSON.stringify({ photoIds: Array.from(selected), format }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -128,7 +128,7 @@ export function GalleryGrid({ baseUrl = "/api/photos", emptyMessage = "No photos
     } catch (err) {
       setDownloadError(err instanceof Error ? err.message : "Download failed");
     } finally {
-      setDownloading(false);
+      setDownloading(null);
     }
   }
 
@@ -159,10 +159,18 @@ export function GalleryGrid({ baseUrl = "/api/photos", emptyMessage = "No photos
               <button
                 type="button"
                 className="btn btn-sm"
-                onClick={downloadSelected}
-                disabled={selected.size === 0 || downloading}
+                onClick={() => downloadSelected("jpg")}
+                disabled={selected.size === 0 || downloading !== null}
               >
-                {downloading ? "Preparing zip…" : `Download${selected.size ? ` (${selected.size})` : ""}`}
+                {downloading === "jpg" ? "Preparing zip…" : `Download JPG${selected.size ? ` (${selected.size})` : ""}`}
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => downloadSelected("avif")}
+                disabled={selected.size === 0 || downloading !== null}
+              >
+                {downloading === "avif" ? "Preparing zip…" : `Download AVIF${selected.size ? ` (${selected.size})` : ""}`}
               </button>
             </>
           )}

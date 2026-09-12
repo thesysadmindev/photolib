@@ -8,6 +8,8 @@ export const config = {
   scratchDir: process.env.WORKER_SCRATCH_DIR ?? "/tmp/photolib",
   darktableTimeoutMs: Number(process.env.DARKTABLE_TIMEOUT_MS ?? "120000"),
   jpegQuality: 92,
+  avifQuality: 65,
+  avifThumbQuality: 60,
   thumbWidth: 800,
   get databaseUrl() {
     return requireEnv("DATABASE_URL");

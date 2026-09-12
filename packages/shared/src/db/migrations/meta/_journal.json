@@ -15,6 +15,13 @@
       "when": 1788446435767,
       "tag": "0001_large_tenebrous",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789211628114,
+      "tag": "0002_nosy_kang",
+      "breakpoints": true
     }
   ]
 }

@@ -46,6 +46,7 @@ export async function GET(
     exif: photo.exif,
     previewUrl: `/api/photos/${photo.id}/preview`,
     downloadJpgUrl: `/api/photos/${photo.id}/download/jpg`,
+    downloadAvifUrl: `/api/photos/${photo.id}/download/avif`,
     tags,
     albums,
   });

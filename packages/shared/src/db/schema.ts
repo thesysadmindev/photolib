@@ -21,7 +21,7 @@ export const photoStatus = pgEnum("photo_status", [
   "failed",
 ]);
 
-export const fileType = pgEnum("file_type", ["jpg", "raw"]);
+export const fileType = pgEnum("file_type", ["jpg", "raw", "avif"]);
 
 export const adminUsers = pgTable("admin_users", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -44,6 +44,8 @@ export const photos = pgTable(
     rawSha256: text("raw_sha256").notNull(),
     jpgStorageKey: text("jpg_storage_key"),
     thumbStorageKey: text("thumb_storage_key"),
+    avifStorageKey: text("avif_storage_key"),
+    avifThumbStorageKey: text("avif_thumb_storage_key"),
     status: photoStatus("status").notNull().default("pending"),
     errorMessage: text("error_message"),
     exif: jsonb("exif"),

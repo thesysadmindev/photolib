@@ -2,12 +2,12 @@ import type { Archiver } from "archiver";
 import { Readable } from "node:stream";
 import { db, schema, getObject, getObjectBuffer } from "@photolib/shared";
 import { watermarkEmbedLimiter } from "./concurrencyLimiter";
-import { embedWatermark } from "./watermarkClient";
-import { generateWatermarkToken } from "./token";
-
-const MAX_TOKEN_ATTEMPTS = 3;
-
-type Photo = typeof schema.photos.$inferSelect;
+import {
+  embedWatermarkedDownload,
+  recordDownloadWithRetry,
+  type DownloadFormat,
+  type Photo,
+} from "./watermarkDownload";
 
 export interface BatchResult {
   succeeded: string[];
@@ -35,14 +35,16 @@ function nameFactory() {
 }
 
 /**
- * Watermarks each photo's JPG (a fresh token per photo, same as the single-file
- * download route) and appends it to the zip as it completes, logging one
- * download_events row per photo either way. Fails closed per-photo: a photo
- * that can't be watermarked is left out of the zip, not served unwatermarked.
+ * Watermarks each photo (a fresh token per photo, same as the single-file
+ * download routes) in the requested format and appends it to the zip as it
+ * completes, logging one download_events row per photo either way. Fails
+ * closed per-photo: a photo that can't be watermarked is left out of the zip,
+ * not served unwatermarked.
  */
-export async function appendWatermarkedJpgs(
+export async function appendWatermarkedImages(
   archive: Archiver,
   photos: Photo[],
+  format: DownloadFormat,
   opts: { ip: string; userAgent: string | undefined; downloadedByAdmin: boolean },
 ): Promise<BatchResult> {
   const makeName = nameFactory();
@@ -61,38 +63,26 @@ export async function appendWatermarkedJpgs(
       try {
         const baseJpg = await getObjectBuffer(photo.jpgStorageKey);
 
-        let attempt = 0;
-        for (;;) {
-          attempt += 1;
-          const token = generateWatermarkToken();
-          const watermarked = await embedWatermark(baseJpg, token);
-          try {
-            await db.insert(schema.downloadEvents).values({
-              photoId: photo.id,
-              fileType: "jpg",
-              token,
-              ipAddress: opts.ip,
-              userAgent: opts.userAgent,
-              watermarkOk: true,
-              downloadedByAdmin: opts.downloadedByAdmin,
-            });
-            archive.append(watermarked, {
-              name: makeName(photo.title ?? photo.originalFilename.replace(/\.[^.]+$/, ""), "jpg"),
-            });
-            succeeded.push(label);
-            break;
-          } catch (insertErr) {
-            const isUniqueViolation = (insertErr as { code?: string }).code === "23505";
-            if (!isUniqueViolation || attempt >= MAX_TOKEN_ATTEMPTS) throw insertErr;
-          }
-        }
+        const { buffer } = await recordDownloadWithRetry({
+          photoId: photo.id,
+          fileType: format,
+          ip: opts.ip,
+          userAgent: opts.userAgent,
+          downloadedByAdmin: opts.downloadedByAdmin,
+          produce: (token) => embedWatermarkedDownload(baseJpg, token, format),
+        });
+
+        archive.append(buffer, {
+          name: makeName(photo.title ?? photo.originalFilename.replace(/\.[^.]+$/, ""), format),
+        });
+        succeeded.push(label);
       } catch {
         failed.push(label);
         await db
           .insert(schema.downloadEvents)
           .values({
             photoId: photo.id,
-            fileType: "jpg",
+            fileType: format,
             token: null,
             ipAddress: opts.ip,
             userAgent: opts.userAgent,

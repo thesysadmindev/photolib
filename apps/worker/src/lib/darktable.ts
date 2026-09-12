@@ -41,3 +41,34 @@ export async function convertRawToJpeg(
     );
   }
 }
+
+/**
+ * Converts a RAW file to AVIF via darktable-cli, straight from the RAW (same
+ * processing history as convertRawToJpeg) rather than re-encoding the JPEG
+ * output - avoids stacking two lossy generations on the AVIF master.
+ */
+export async function convertRawToAvif(
+  inputPath: string,
+  outputPath: string,
+): Promise<void> {
+  try {
+    await execa(
+      "darktable-cli",
+      [
+        inputPath,
+        outputPath,
+        "--core",
+        "--conf",
+        `plugins/imageio/format/avif/quality=${config.avifQuality}`,
+      ],
+      { timeout: config.darktableTimeoutMs },
+    );
+  } catch (err) {
+    const e = err as { stdout?: string; stderr?: string; message: string };
+    throw new DarktableError(
+      `darktable-cli failed: ${e.message}`,
+      (e.stdout ?? "").slice(0, 4000),
+      (e.stderr ?? "").slice(0, 4000),
+    );
+  }
+}

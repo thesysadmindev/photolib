@@ -72,9 +72,14 @@ export default async function PhotoDetailPage({ params }: { params: { id: string
             </div>
           )}
 
-          <a className="btn btn-block" href={`/api/photos/${photo.id}/download/jpg`}>
-            Download JPG
-          </a>
+          <div className="btn-row">
+            <a className="btn" href={`/api/photos/${photo.id}/download/jpg`}>
+              Download JPG
+            </a>
+            <a className="btn" href={`/api/photos/${photo.id}/download/avif`}>
+              Download AVIF
+            </a>
+          </div>
 
           <div className="detail-card">
             <h2>Photo details</h2>

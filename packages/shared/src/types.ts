@@ -1,5 +1,5 @@
 export type PhotoStatus = "pending" | "processing" | "ready" | "failed";
-export type FileType = "jpg" | "raw";
+export type FileType = "jpg" | "raw" | "avif";
 
 export interface ExifSummary {
   cameraMake?: string;

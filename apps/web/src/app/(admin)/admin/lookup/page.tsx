@@ -55,8 +55,8 @@ export default function AdminLookupPage() {
 
       <form onSubmit={handleSubmit} className="form-card">
         <div className="field">
-          <label htmlFor="lookup-file">JPG file</label>
-          <input id="lookup-file" ref={fileInput} type="file" accept="image/jpeg" required />
+          <label htmlFor="lookup-file">JPG or AVIF file</label>
+          <input id="lookup-file" ref={fileInput} type="file" accept="image/jpeg,image/avif" required />
         </div>
         <button className="btn btn-block" type="submit" disabled={loading}>
           {loading ? "Analyzing…" : "Analyze"}

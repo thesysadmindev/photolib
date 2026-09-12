@@ -4,7 +4,7 @@ import { db, schema } from "@photolib/shared";
 import { inArray } from "drizzle-orm";
 import { authOptions } from "@/lib/auth";
 import { getClientIp } from "@/lib/ip";
-import { appendRawFiles, appendWatermarkedJpgs, manifestEntry } from "@/lib/batchDownload";
+import { appendRawFiles, appendWatermarkedImages, manifestEntry } from "@/lib/batchDownload";
 import { createZipResponse } from "@/lib/zipStream";
 
 export const dynamic = "force-dynamic";
@@ -18,14 +18,17 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null);
-  const fileType = body?.fileType === "raw" || body?.fileType === "jpg" ? body.fileType : null;
+  const fileType =
+    body?.fileType === "raw" || body?.fileType === "jpg" || body?.fileType === "avif"
+      ? body.fileType
+      : null;
   const rawIds: unknown = body?.photoIds;
   const photoIds: string[] = Array.isArray(rawIds)
     ? Array.from(new Set(rawIds.filter((id): id is string => typeof id === "string")))
     : [];
 
   if (!fileType) {
-    return NextResponse.json({ error: "fileType must be 'raw' or 'jpg'" }, { status: 400 });
+    return NextResponse.json({ error: "fileType must be 'raw', 'jpg', or 'avif'" }, { status: 400 });
   }
   if (photoIds.length === 0) {
     return NextResponse.json({ error: "No photos selected" }, { status: 400 });
@@ -49,7 +52,7 @@ export async function POST(req: NextRequest) {
     const result =
       fileType === "raw"
         ? await appendRawFiles(archive, photos, { ip, userAgent })
-        : await appendWatermarkedJpgs(archive, photos, { ip, userAgent, downloadedByAdmin: true });
+        : await appendWatermarkedImages(archive, photos, fileType, { ip, userAgent, downloadedByAdmin: true });
     const note = manifestEntry(result);
     if (note) archive.append(note, { name: "MANIFEST.txt" });
   }, `photolib-${fileType}.zip`);
